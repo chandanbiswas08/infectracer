@@ -103,7 +103,8 @@ To generate simulated data, simply execute
 sh addusers.sh data.txt
 ```
 
-![Alt text](Infected_noninfected.png?raw=true)
+![Infected noninfected](Infected_noninfected.png)
+
 Again, we provide a zipped version of this file as `data/data.txt.ext.gz`. Unzipping this file you should see `1601454` lines (`wc -l`).
 
 
