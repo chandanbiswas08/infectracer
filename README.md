@@ -49,7 +49,7 @@ The next step is to retrieve the susceptible cases. The program simulates the ca
 
 You simply need to execute
 ```
-python retrieve_susceptibles.py -d data/data.txt.ext -i simusers.idx -s 0.001 -n 266909
+python retrieve_susceptibles.py -d data/data.txt.ext -i simusers.idx -s 0.01 -n 266909
 ``` 
 where you specify the data file (to simulate infected people), the index file (to retrieve susceptible people) and the fraction infected (in the example set to `0.01` or `1%`).
 The last argument is the number of real users in the data (this is useful for the program to compute the ground-truth information and compute recall).
@@ -103,6 +103,7 @@ To generate simulated data, simply execute
 sh addusers.sh data.txt
 ```
 
+![Alt text](Infected_noninfected.png?raw=true)
 Again, we provide a zipped version of this file as `data/data.txt.ext.gz`. Unzipping this file you should see `1601454` lines (`wc -l`).
 
 

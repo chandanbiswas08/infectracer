@@ -13,8 +13,8 @@ from gpsutils import get_cartesian
 from gpsutils import loadusers
 from gpsutils import loadUserMap
 
-K=5 # to retrieve
-NUM_GHOST_USERS=5
+# K=5 # to retrieve
+# NUM_GHOST_USERS=5
 SEED=12345
 
 def genRandomQuery(min_time, max_time):
@@ -29,27 +29,27 @@ def genRandomQuery(min_time, max_time):
     return [x, y, z, t-min_time]
 
 
-def evaluateRecall(userid, userids, nn_ids, MAX_USER_ID):
+def evaluateRecall(userid, userids, nn_ids, MAX_USER_ID, NUM_GHOST_USERS, K):
     # get the ground-truth
     rel_userids = []
-    ghostuserid_start = MAX_USER_ID + NUM_GHOST_USERS*(userid-1) + 1;
+    ghostuserid_start = MAX_USER_ID + 2 * NUM_GHOST_USERS*(userid-1) + 1
     for i in range(0, NUM_GHOST_USERS):
-        rel_userids.append(int(ghostuserid_start + i));
+        rel_userids.append(int(ghostuserid_start + i))
 
     #print ("rel({}) = {}".format(userid, rel_userids));
 
     retr_userids = []
-    for i in range(0, K):
+    for i in range(0, len(nn_ids)):
         retr_userids.append(int(userids[nn_ids[i]]))
 
     #print ("retr({}) = {}".format(userid, retr_userids));
 
-    correct = set(rel_userids) & set(retr_userids);
+    correct = set(rel_userids) & set(retr_userids)
     #print ("matches = {}".format(len(correct)));
  
     return len(correct)/len(rel_userids) # recall value...
 
-def execRandomLocQueries():
+def execRandomLocQueries(index, K):
     for i in range (0, 10):  
         query_data = genRandomQuery(1333476006, 1334096862)
         print ("Query: {}".format(query_data))
@@ -62,7 +62,7 @@ def execRandomLocQueries():
             print ("{}: {}".format(nn_ids[i], distances[i]))
 
 
-def executeQueries(index, userinfomap, userids, infected_users, MAX_USER_ID):
+def executeQueries(index, userinfomap, userids, infected_users, MAX_USER_ID, NUM_GHOST_USERS, K):
     net_recall = 0
     total_queries = 0
 
@@ -82,15 +82,14 @@ def executeQueries(index, userinfomap, userids, infected_users, MAX_USER_ID):
             #distances = distances[1:]
             #for i in range(0, K):  # the first retrieved should be the query itself... ignore it
             #    print ("Suspectible User = {}, distance from infected = {}".format(int(userids[nn_ids[i]]), distances[i]))
-
-            recall = evaluateRecall(infected_user, userids, nn_ids, MAX_USER_ID);
+            recall = evaluateRecall(infected_user, userids, nn_ids, MAX_USER_ID, NUM_GHOST_USERS, K)
             net_recall = net_recall + recall
             total_queries = total_queries + 1
             #print ("Recall({}) = {}".format(infected_user, recall));
         
     end = time.time() 
     print('Search time = %f' % round(end-start, 4))
-    print ("Avg. Recall = {}".format(round(net_recall/total_queries, 4)));  # this is also safe coz only one data per user...
+    print ("Avg. Recall = {}".format(round(net_recall/total_queries, 4)))  # this is also safe coz only one data per user...
 
 def main(argv):
     DATA_FILE = None
@@ -98,7 +97,7 @@ def main(argv):
     FRACTION_INFECTED = 0
 
     try:
-        opts, args = getopt.getopt(argv,"h:d:i:s:n:", ["datafile=", "indexfile=", "sick=", "nusers="])
+        opts, args = getopt.getopt(argv,"h:d:i:s:n:k:g:", ["datafile=", "indexfile=", "sick=", "nusers=", "nretrieve=", "nghostusers="])
 
         for opt, arg in opts:
             if opt == '-h':
@@ -112,6 +111,10 @@ def main(argv):
                 FRACTION_INFECTED = float(arg)
             elif opt in ("-n", "--nusers"):
                 MAX_USER_ID = int(arg)
+            elif opt in ("-k", "--nretrieve"):
+                K = int(arg)
+            elif opt in ("-g", "--nghostusers"):
+                NUM_GHOST_USERS = int(arg)
 
     except getopt.GetoptError:
         print ('usage: index_checkins.py -d <datafile> -i <indexfile> -s <fraction_sick> -n/--nusers= <nusers>')
@@ -128,19 +131,21 @@ def main(argv):
     print ("Loading user data...")
     userinfomap = loadUserMap(gps_data_matrix)
 
-    unique_user_ids = list(range (1, MAX_USER_ID+1)); # only the real users... not the ghost (simulated) ones...
+    unique_user_ids = list(range (1, MAX_USER_ID+1)) # only the real users... not the ghost (simulated) ones...
 
-    num_queries = int(len(unique_user_ids)*FRACTION_INFECTED)
-    print ("Number of users infected: {}".format(num_queries))
+    for FRACTION_INFECTED in [0.001, 0.01, 0.02, 0.03, 0.04, 0.05]:
+        num_queries = int(len(unique_user_ids)*FRACTION_INFECTED)
+        print ("Number of users infected: {}".format(num_queries))
+        for K in [5, 10, 15, 20]:
+            r.seed(SEED)
+            r.shuffle(unique_user_ids)
+            infected_users = r.sample(unique_user_ids, num_queries)
 
-    r.seed(SEED)
-    r.shuffle(unique_user_ids)
-    infected_users = r.sample(unique_user_ids, num_queries)
-        
-    index = nmslib.init(method='hnsw', space='l2')
-    index.loadIndex(IDX_FILE, load_data=False)
+            index = nmslib.init(method='hnsw', space='l2')
+            index.loadIndex(IDX_FILE, load_data=False)
 
-    executeQueries(index, userinfomap, userids, infected_users, MAX_USER_ID)
+            executeQueries(index, userinfomap, userids, infected_users, MAX_USER_ID, NUM_GHOST_USERS, K)
 
 if __name__ == "__main__":
+    # main('-d data/data.txt.ext -i simusers.idx -s 0.05 -n 266909 -k 20 -g 15'.split())
     main(sys.argv[1:])
