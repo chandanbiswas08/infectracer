@@ -1,3 +1,7 @@
+# Are You Covid-19 Positive? A Location Based Reality Check
+In the present national emergency situation of coronavirus pandemic governments of all countries are trying to prevent massive propagation of that virus. To get a success in preventing propagation of the Covid-19 virus many governments have decided to keep the whole country locked down. According to expart’s opinion the ultimate success can be achieved by quarantining all Covid-19 positive patients and all those persons who came in contact or closer to these patients within last 15-20 days. Very often it is happening that some person who met the affected patient hides this information from local administration to avoid quarantine. In this situation the basic problem is finding out those vulnerable people, but this is a very hard problem because it is very difficult for the patient to remember who met him in the last 15-20 days. It is also difficult for someone to find out whether he/she came closer to an affected patient in the last few days. We have developed a location based coronavirus reality check system which enables users to find out whether he/she came closer to any Covid-19 positive patients.
+
+
 # INFECTRACER
 
   
@@ -18,7 +22,6 @@ for which you should see
 ```
 266909 data/data.txt
 1601454 data/data.txt.ext
-1868363 total
 ```
 
 ### Approximate Retrieval Approach
@@ -97,14 +100,25 @@ The real FourSquare check-in data is not directly applicable for our study becau
 We undertake a simple simulation model to generate pseudo-user interactions (likely contacts). First, we filter the `data.txt` file to retain only one check-in per user. This makes the simulation algorithm easier to manage.
 
 Next, for each user `U` (having a unique id),  we generate a set of mutually exclusive `pseudo-users` or `ghost-users`, which comprises the ground-truth information for each user. Note that since all the original/real user-checkins were sufficiently apart in space-time coordinates, it is likely that the neighbourhood of a user comprised of the ghost-user check-ins are also far apart  (in which case one can rely with sufficient confidence on the simulated ground-truth data).
+For each user `U` we generate `p+n` number of `ghost-user` in `$\delta$` neighbourhood, out of them `p` number of `ghost-users` are belong to `$\epsilon$` neighbourhood, if user `U` is positively infected person then these `p` `ghost-users` will be considered as  vulnerable person, whom we need to identify, and remaining `n` people will be considered as non-suspicious persons as they are in safe distance from the infected person `U`.  In the following figure we have shown a visualization of simulated `ghost-users` corresponding to a real infected user (red person in the figure).
+![Infected noninfected](Infected_noninfected.png)
 
 To generate simulated data, simply execute
 ```
 sh addusers.sh data.txt
 ```
 
-![Infected noninfected](Infected_noninfected.png)
+
 
 Again, we provide a zipped version of this file as `data/data.txt.ext.gz`. Unzipping this file you should see `1601454` lines (`wc -l`).
 
 
+### Results
+To address the correctness of our algorithm we computed `Recall`as evaluation metric. As in our problem positively infected `ghost-users` should not slip away so `Recall` is a good choice as an evaluation metric. In our experiment we consider the number of `ghost-user` corresponding to a given user, `$\epsilon$` and `$\delta$` neighbourhood as parameters. In the following table we have presented our experimented results.
+
+| #Users | Fraction<br>infected | #Infected | #Ghost | $\epsilon$ | $\delta$ | #Retrieved | Search<br>time | Recall |
+|:------:|:--------------------:|:---------:|:------:|:----------:|:--------:|:----------:|:--------------:|:------:|
+| 266909 | 0.01 | 2669 | 5 | 1 | 2 | 5 | 0.0774 | 0.9036 |
+| 266909 | 0.02 | 5338 | 5 | 1 | 2 | 5 | 0.1569 | 0.9016 |
+| 266909 | 0.03 | 8007 | 5 | 1 | 2 | 5 | 0.2559 | 0.9010 |
+| 266909 | 0.04 | 10676 | 5 | 1 | 2 | 5 | 0.3087 | 0.9052 |
