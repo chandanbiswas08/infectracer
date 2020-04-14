@@ -1,8 +1,4 @@
-% INFECTRACER: Approximate Nearest Neighbors Retrieval of GPS Location Traces to Report Candidate Infections
-% Chandan Biswas, Indian Statistical Institute, Kolkata[^1]
-  Debasis Ganguly, IBM Research Lab, Dublin, Ireland[^2]
-[^1]: chandanbiswas08_r@isical.ac.in
-[^2]: debasis.ganguly1@ie.ibm.com
+# INFECTRACER: Approximate Nearest Neighbors Retrieval of GPS Location Traces to Report Candidate Infections
 
 In the present national emergency situation of coronavirus pandemic governments of all countries are trying to prevent massive propagation of that virus. To get a success in preventing propagation of the Covid-19 virus many governments have decided to keep the whole country locked down. According to experts, prevention of the spread of the disease can be achieved by quarantining all Covid-19 positive patients, and all those persons who came in contact or closer to these patients within last 15-20 days. Very often it happens that a person who came in close contact with an infected patient hides this information from local administration to avoid quarantine. In this situation, the key problem is finding out who those people are. This repository describes a  system that reports all possible cases of proximities of a person with another infected person. We believe that with the availabity of GPS location data of a large number of users, the system can very quickly help finding suspectible people in very quick time (which in the real-life could help in the initiative of imposing quarantine on them and prevent further spread of the disease).
 
