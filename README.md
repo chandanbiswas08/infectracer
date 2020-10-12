@@ -16,13 +16,15 @@ If you want to generate your own data (using a different simulation approach the
 
 ```bash
 gunzip data/*
-wc -l data/data.txt
-wc -l data/data.txt.ext
+wc -l data/*
 ```
 For which you should see
 ```bash
-266909 data/data.txt
-1601454 data/data.txt.ext
+   266909 data/data.txt
+  4270544 data/data.txt_5_1.ext
+  1499439 data/trajectory_data_50_50_200_10000.txt
+    10000 data/user_nn_50_50_200_10000.txt
+  6046892 total
 ```
 
 ### Approximate Retrieval Approach
@@ -41,11 +43,29 @@ In our approach, we undertake an **approximate nearest neighbor** search approac
   
 The next step is to install the `nmslib` library. Simply execute `pip install nmslib`. Make sure you have `numpy` installed (if not execute `pip install numpy`).
 
-You then need to execute
+The indexing step enables a very fast retrieval of susceptible cases. To perform the indexing step using different algorithms we need to execute following commands:
+
+### HNSW
 ```bash
-python index_checkins.py -d data/data.txt.ext -i simusers.idx
+python build_index.py -d data/data.txt_5_1.ext --secure False
 ``` 
-where you specify the data file (comprising the user-id, locations, time-offsets) and the index file to save the data. The indexing step enables a very fast retrieval of susceptible cases.
+
+### PP-HNSW
+```bash
+python build_index.py -d data/data.txt_5_1.ext --secure True --depth_sb 2 --num_sb 8 --bins 1000000
+```  
+
+### KD-tree
+```bash
+python build_tree.py -d data/data.txt_5_1.ext --secure False
+``` 
+
+### PP-KD-tree
+```bash
+python build_tree.py -d data/data.txt_5_1.ext -l True --secure True --depth_sb 2 --num_sb 8 --bins 1000000
+```
+For **HNSW** and **KD-tree** we specify the data file (comprising the user-id, locations, time-offsets) and secure=False and for **PP-HNSW** and **PP-KD-tree** we specify  the data file, to preserve privacy we write secure=True, number of projection axis of the setsof hyperplanes, number of sets of hyperplanes and the number of bins in which we quantize the project data to preserve the privacy.
+
 The geo-locations of users (which in real life can be obtained from GPS locations of smart phones) are then represented as `3` dimensional points (*2 space dimensions* corresponding to the location on the Earth's surface and *1 time dimension* measured in epoch seconds). The path traced in this 3 dimensional space-time corresponds to the activity phase of a single user. The idea is shown in the figure below, which shows a simple visualization of a 2d space-time world (the space-time in our case is 3d).
 
 ![Spacetime](spacetime.png)
@@ -54,24 +74,91 @@ Each person is shown as a path (curve) in this space-time, i.e. each person chan
 
 ### Retrieval of Candidate Infected Persons
 
-The next step is to retrieve the susceptible cases. The program simulates the case that a fraction of the population (whose data exists in the index already) has been infected. The `retrieval` program formulates and executes a query for each of these infected people and reports a list of 3 most susceptible persons that came in close contact (in terms of space and time) with an infected person.
+The next step is to retrieve the susceptible cases. The program simulates the case that a fraction of the population (whose data exists in the index already) has been infected. The `retrieval` program formulates and executes a query for each of these infected people and reports a list of **K** most susceptible persons that came in close contact (in terms of space and time) with an infected person.
 
-You simply need to execute
+The commands for retrieval step and corresponding outputs for different algorithms are following:
+### HNSW
 ```bash
-python retrieve_susceptibles.py -d data/data.txt.ext -i simusers.idx -s 0.01 -n 266909
+python retrieve_susceptibles.py -d data/data.txt_5_1.ext -s 0.04 -n 266909 -k 100 -g 5 -a hnsw -c True -l True --secure False
 ``` 
-where you specify the data file (to simulate infected people), the index file (to retrieve susceptible people) and the fraction infected (in the example set to `0.01` or `1%`).
-The last argument is the number of real users in the data (this is useful for the program to compute the ground-truth information and compute recall).
-
-The program prints out output in the following format:
+## Output:
 ```bash
-Reading data file...
-Loading user ids...
-Loading user data...
-Number of users infected: 2669
-Search time = 0.055400
-Avg. Recall = 0.9332
+Algorithm name HNSW
+Data file name data/data.txt_5_1.ext
+Loading user ids from pkl...
+Loading data matrix from pkl...
+Loading userinfomap from pkl...
+Retrieval started ...
+Number of users infected: 10676 
+K = 100 
+Search time = 0.036500 millisec/query 
+Avg. Recall = 0.998700
+Total retrieval time = 2.38 sec
 ```
+
+### PP-HNSW
+```bash
+python retrieve_susceptibles.py -d data/data.txt_5_1.ext -s 0.04 -n 266909 -k 100 -g 5 -a hnsw -c True -l True --secure True --depth_sb 2 --num_sb 8 --bins 1000000
+``` 
+## Output:
+```bash
+Algorithm name PP-HNSW
+Data file name data/data.txt_5_1.ext
+Loading user ids from pkl...
+Loading data matrix from pkl...
+Loading userinfomap from pkl...
+Quantized data shape (4270544, 16) Number of bins 1000000
+
+Retrieval started ...
+Number of users infected: 10676 
+K = 100 
+Search time = 0.047200 millisec/query 
+Avg. Recall = 0.769800
+Total retrieval time = 3.18 sec
+``` 
+
+### KD-tree
+```bash
+python retrieve_susceptibles.py -d data/data.txt_5_1.ext -s 0.04 -n 266909 -k 100 -g 5 -a kd_tree -c True -l True --secure False
+``` 
+## Output:
+```bash
+Algorithm name KD-tree
+Data file name data/data.txt_5_1.ext
+Loading user ids from pkl...
+Loading data matrix from pkl...
+Loading userinfomap from pkl...
+Loading nbrs from pkl...
+Retrieval started ...
+Number of users infected: 10676 
+K = 100 
+Search time = 2.945400 millisec/query 
+Avg. Recall = 1.000000
+Total retrieval time = 33.94 sec
+```
+
+### PP-KD-tree
+```bash
+python retrieve_susceptibles.py -d data/data.txt_5_1.ext -s 0.04 -n 266909 -k 100 -g 5 -a kd_tree -c True -l True --secure True --depth_sb 2 --num_sb 8 --bins 1000000
+``` 
+## Output:
+```bash
+Algorithm name PP-KD-tree
+Data file name data/data.txt_5_1.ext
+Loading user ids from pkl...
+Loading data matrix from pkl...
+Loading userinfomap from pkl...
+Quantized data shape (4270544, 16) Number of bins 1000000
+
+Loading nbrs from pkl...
+Retrieval started ...
+Number of users infected: 10676 
+K = 100 
+Search time = 9.137400 millisec/query 
+Avg. Recall = 0.807800
+Total retrieval time = 100.38 sec
+```
+In each algorithm we specify the data file (to simulate infected people),  the fraction infected (in the example set to `0.04` or `4%`), the number of real users in the data (this is useful for the program to compute the ground-truth information and compute recall),  tne number of most susceptible persons that came in close contact (in terms of space and time) with an infected person, whether it is Check-In data, whether load data from pkl and for **PP-HNSW** and **PP-KD-tree** we specify privacy preservation by secure=True, and we mension number of projection axis of the setsof hyperplanes, number of sets of hyperplanes and the number of bins in which we quantize the project data to preserve the privacy
  
  The main usefulness of the program is the `lightning fast search` through millions of check-in locations identifying the susceptible people in real quick time. Exact brute force distance computation involves scanning through billions of check-in locations for each infected person (a new query), which is not scalable. Pandemics can be better fought if susceptible people to catch an infection are quickly identified and quarantined. We believe that this tool can contribute to such a cause. We also observe that the recall achieved is satisfactory.
 
@@ -111,21 +198,22 @@ For each user `U` we generate `p+n` number of `ghost-user` in `delta` neighbourh
 
 To generate simulated data, simply execute
 ```bash
-sh addusers.sh data.txt
+sh addusers.sh data.txt 5 1
 ```
+where second argument is number of `ghost-users` `p`, we consider value of `n` as `2*p` and the last argument is value of `epsilon` and we consider `delta=2*epsilon`. 
 
 
 
-Again, we provide a zipped version of this file as `data/data.txt.ext.gz`. Unzipping this file you should see `1601454` lines (`wc -l`).
+Again, we provide a zipped version of this file as `data/data.txt_5_1.ext.gz`. Unzipping this file you should see `4270544` lines (`wc -l`).
 
 
 ### Preliminary Results
 
 To address the correctness of our algorithm we employ `Recall` as evaluation metric because the task of finding suspectible users is a recall-oriented task (false positives are acceptable but not the false negatvies). While the parameter `epsilon` controls the number of people to whom the disease spreads from a single person, the parameter `delta` controls the number of false positives (intentionally introduced to see if the algorithm can filter out the true positives from the false ones). In the following table we have present our initial experimental results.
 
-| #Users | Infected (%) | #Infected | #Pseudo-users | `epsilon` | `delta` | #Retrieved | Search<br>time (s) | Recall |
-|:------:|:--------------------:|:---------:|:------:|:----------:|:--------:|:----------:|:--------------:|:------:|
-| 266909 | 1 | 2669 | 5 | 1 | 2 | 5 | 0.0774 | 0.9036 |
-| 266909 | 2 | 5338 | 5 | 1 | 2 | 5 | 0.1569 | 0.9016 |
-| 266909 | 3 | 8007 | 5 | 1 | 2 | 5 | 0.2559 | 0.9010 |
-| 266909 | 4 | 10676 | 5 | 1 | 2 | 5 | 0.3087 | 0.9052 |
+|Algorithm| #Users | Infected (%) | #Infected | #Pseudo-users | `epsilon` | `delta` | #Retrieved | Search<br>time (ms) | Recall |
+|:------:|:------:|:--------------------:|:---------:|:------:|:----------:|:--------:|:----------:|:--------------:|:------:|
+|HNSW| 266909 | 4 | 10676 | 5 | 1 | 2 | 100 | 0.0365 | 0.9987 |
+|PP-HNSW| 266909 | 4 | 10676 | 5 | 1 | 2 | 100 | 0.0472 | 0.7698 |
+|KD-tree| 266909 | 4 | 10676 | 5 | 1 | 2 | 100 | 2.9454 | 1.0000 |
+|PP-KD-tree| 266909 | 4 | 10676 | 5 | 1 | 2 | 100 | 9.1374 | 0.8078 |
