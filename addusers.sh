@@ -13,8 +13,8 @@ fi
 
 DATA=$1
 K=$2
-EXTENDED_DATA=$DATA.ext
 EPSILON=$3
+EXTENDED_DATA=$DATA'_'$K'_'$EPSILON.ext
 
 
 #edit the user ids in the original file
@@ -31,7 +31,7 @@ userid=$1; \
 lat=$2; \
 long=$3; \
 time=$4; \
-ghostuserid_start = MAXID + 2 * K*(userid-1); \
+ghostuserid_start = MAXID + 3 * K*(userid-1); \
 for (s=1; s<=K; s++) { \
     ghostuserid = ghostuserid_start + s; \
     del_lat = -EPSILON + rand()*2*EPSILON; \
@@ -41,7 +41,7 @@ for (s=1; s<=K; s++) { \
     printf ("%s %s %s %s\n", ghostuserid, new_lat, new_long, time); \
 } \
 ghostuserid_start_neg = ghostuserid_start + K
-for (s=1; s<=K; s++) { \
+for (s=1; s<=2*K; s++) { \
     ghostuserid = ghostuserid_start_neg + s; \
     del_lat = -EPSILON + rand()*2*EPSILON; \
     del_lat = del_lat + (del_lat/sqrt(del_lat*del_lat))*EPSILON; \
