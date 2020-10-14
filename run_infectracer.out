@@ -127,9 +127,6 @@ Avg. Recall = 0.978500
 Total retrieval time = 7.37 sec
 
 
-Algorithm name kd_tree
-
-
 Algorithm name KD-tree
 Data file name data/trajectory_data_50_50_200_10000.txt
 Reading data file...
@@ -180,9 +177,6 @@ K = 100
 Search time = 2.493700 millisec/query 
 Avg. Recall = 0.925500
 Total retrieval time = 3.62 sec
-
-
-Algorithm name kd_tree
 
 
 Algorithm name PP-KD-tree
