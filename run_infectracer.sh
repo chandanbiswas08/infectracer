@@ -37,6 +37,9 @@ data_path='data/trajectory_data_50_50_200_10000.txt'
 idx_path='data/trajectory_data_50_50_200_10000.txt.idx'
 gt_path='data/user_nn_50_50_200_10000.txt'
 rm data/trajectory_data_50_50_200_10000.txt.out
+FRACTION_INFECTED=0.04
+nretrieve=100
+
 
 ### HNSW ###
 python build_index.py -d $data_path --space l2 -m 4 -e 100 -t 1 -l True --secure False --depth_sb 2 --num_sb 8 --bins 128
@@ -110,11 +113,5 @@ python retrieve_susceptibles.py -d $data_path -s $FRACTION_INFECTED -n 10000 -k 
 ### PP-KD-tree ###
 #python build_tree.py -d $data_path -l True --secure True --depth_sb 2 --num_sb 8 --bins 1024
 #python retrieve_susceptibles.py -d $data_path -s $FRACTION_INFECTED -n 1000000 -k $nretrieve -g 30 -t $gt_path  -a kd_tree -c False -l True --secure True --depth_sb 2 --num_sb 8 --bins 1024
-
-
-
-
-
-
 
 
